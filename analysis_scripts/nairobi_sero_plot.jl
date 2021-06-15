@@ -135,6 +135,6 @@ scatter!([mean([(Date(2020,11,2) - Date(2020,2,24)).value,(Date(2020,11,23) - Da
 #         ms = 8,yerr = ([lerr_middle_age_kibera],[uerr_middle_age_kibera]),xerr = ([4],[4]),lab = " Kibera random household survey : 10-60 year olds (not used in fitting)",
 #         markershape = :diamond,mc = 1)
 
-# savefig("plots/nairobi_seroplot.png")
+savefig("plots/nairobi_seroplot.png")
 
 

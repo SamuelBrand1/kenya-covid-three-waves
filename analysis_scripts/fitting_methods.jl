@@ -44,6 +44,8 @@ function get_predictions(model::KenyaCoVSD.CoVAreaModel,projection_date::Date,p_
 
     incidence₁ = zeros((projection_date - Date(2020,2,20)).value,length(first(MCMCdraws)))
     incidence₂ = zeros((projection_date - Date(2020,2,20)).value,length(first(MCMCdraws)))
+    firstincidence₁ = zeros((projection_date - Date(2020,2,20)).value,length(first(MCMCdraws)))
+    firstincidence₂ = zeros((projection_date - Date(2020,2,20)).value,length(first(MCMCdraws)))
     serocoverted₁ = zeros((projection_date - Date(2020,2,20)).value,length(first(MCMCdraws)))
     serocoverted₂ = zeros((projection_date - Date(2020,2,20)).value,length(first(MCMCdraws)))
     susceptible₁ = zeros((projection_date - Date(2020,2,20)).value,length(first(MCMCdraws)))
@@ -85,6 +87,8 @@ function get_predictions(model::KenyaCoVSD.CoVAreaModel,projection_date::Date,p_
         PCR₂ = KenyaCoVSD.simple_conv(ι₂,PCR_array)
         incidence₁[:,k] = ι₁
         incidence₂[:,k] = ι₂
+        firstincidence₁[:,k] = ι_sero₁
+        firstincidence₂[:,k] = ι_sero₂
         susceptible₁[:,k] = sol[:S₁][2:end]
         susceptible₂[:,k] = sol[:S₂][2:end]
         serocoverted₁[:,k] .= sero_sensitivity.*KenyaCoVSD.simple_conv(ι_sero₁,sero_array)
@@ -108,17 +112,18 @@ function get_predictions(model::KenyaCoVSD.CoVAreaModel,projection_date::Date,p_
         prop_PCR_postnv = MCMCdraws.p_choose1[k].*(MCMCdraws.χ_boost[k]*MCMCdraws.χ₁[k].*PCR₁[(janendpoint+1):end]./((MCMCdraws.χ_boost[k]*MCMCdraws.χ₁[k]-1).*PCR₁[(janendpoint+1):end] .+ sum(N₁)))
         prop_PCR_postnv .+=  (1 .- MCMCdraws.p_choose1[k]).*(MCMCdraws.χ_boost[k]*MCMCdraws.χ₂[k].*PCR₂[(janendpoint+1):end]./((MCMCdraws.χ_boost[k]*MCMCdraws.χ₂[k]-1).*PCR₂[(janendpoint+1):end].+ sum(N₂)))
         prop_PCR_pred[:,k] .= vcat(prop_PCR_prenv,prop_PCR_postnv)
-        
+
 
         #PCR forecast accounting for test rates in last 60 days of period
         forecast_testing_rate[:,k] .= [ones(length(prop_PCR_pred[:,k])) prop_PCR_pred[:,k]]*test_fit.β
-        
-        
+
+
 
     end
-                             
+
 
     return (incidence₁ = incidence₁,incidence₂ = incidence₂,
+            firstincidence₁ = firstincidence₁,firstincidence₂ = firstincidence₂,
             serocoverted₁ = serocoverted₁,serocoverted₂ = serocoverted₂,
             susceptible₁ = susceptible₁,susceptible₂ = susceptible₂,
             Rt₁ = Rt₁,Rt₂ = Rt₂,
@@ -130,10 +135,16 @@ end
 
 
 function condense_prediction(prediction,num_tests,deaths,p_ID,relative_testing_rate)
-    mean_incidence₁ = mean(prediction.incidence₁,dims = 2)[:]
-    std_incidence₁ = std(prediction.incidence₁,dims = 2)[:]
-    mean_incidence₂ = mean(prediction.incidence₂,dims = 2)[:]
-    std_incidence₂ = std(prediction.incidence₂,dims = 2)[:]
+    mean_incidence₁ = mean(prediction.firstincidence₁,dims = 2)[:]
+    std_incidence₁ = std(prediction.firstincidence₁,dims = 2)[:]
+    mean_incidence₂ = mean(prediction.firstincidence₂,dims = 2)[:]
+    std_incidence₂ = std(prediction.firstincidence₂,dims = 2)[:]
+    
+    mean_total_incidence₁ = mean(prediction.incidence₁,dims = 2)[:]
+    std_total_incidence₁ = std(prediction.incidence₁,dims = 2)[:]
+    mean_total_incidence₂ = mean(prediction.incidence₂,dims = 2)[:]
+    std_total_incidence₂ = std(prediction.incidence₂,dims = 2)[:]
+    
     mean_serocoverted₁ = mean(prediction.serocoverted₁,dims = 2)[:]
     std_serocoverted₁ = std(prediction.serocoverted₁,dims = 2)[:]
     mean_serocoverted₂ = mean(prediction.serocoverted₂,dims = 2)[:]
@@ -150,7 +161,7 @@ function condense_prediction(prediction,num_tests,deaths,p_ID,relative_testing_r
     std_PCR_pred_no_test_rate = std(prediction.PCR_pred,dims = 2)[:]
     mean_prop_PCR_pred = mean(prediction.prop_PCR_pred,dims = 2)[:]
     std_prop_PCR_pred = std(prediction.prop_PCR_pred,dims = 2)[:]
-   
+
     # mean_PCR_forecast = mean(prediction.prop_PCR_pred.*prediction.forecast_testing_rate,dims = 2)[:]
     # std_PCR_forecast = std(prediction.prop_PCR_pred.*prediction.forecast_testing_rate,dims = 2)[:]
 
@@ -175,23 +186,23 @@ function condense_prediction(prediction,num_tests,deaths,p_ID,relative_testing_r
                                         p_ID,
                                         relative_testing_rate;
                                         fitlength=size(prediction.incidence₁,1))
-    
-    mean_unscaled_deaths1 = mean(unscaled_deaths1,dims = 2)[:]    
-    mean_unscaled_deaths2 = mean(unscaled_deaths2,dims = 2)[:] 
+
+    mean_unscaled_deaths1 = mean(unscaled_deaths1,dims = 2)[:]
+    mean_unscaled_deaths2 = mean(unscaled_deaths2,dims = 2)[:]
     println("fitting deaths")
     function neg_ll(μ)
         LL = 0.
-        for (t,D) in enumerate(deaths) 
+        for (t,D) in enumerate(deaths)
             LL += logpdf(Poisson(exp(μ[1])*mean_unscaled_deaths1[t] + exp(μ[2])*mean_unscaled_deaths2[t]),D)
         end
         return -LL
     end
 
-    res = optimize(neg_ll,log.([0.0001,0.0001]),LBFGS())    
+    res = optimize(neg_ll,log.([0.0001,0.0001]),LBFGS())
     μ_fit = exp.(res.minimizer)
 
-    
-    pred_deaths = μ_fit[1].*unscaled_deaths1 .+ μ_fit[2].*unscaled_deaths2 
+
+    pred_deaths = μ_fit[1].*unscaled_deaths1 .+ μ_fit[2].*unscaled_deaths2
     mean_deaths = mean(pred_deaths,dims = 2)[:]
     std_deaths = std(pred_deaths,dims = 2)[:]
 
@@ -199,6 +210,10 @@ function condense_prediction(prediction,num_tests,deaths,p_ID,relative_testing_r
             std_incidence₁ = std_incidence₁,
             mean_incidence₂ = mean_incidence₂,
             std_incidence₂ = std_incidence₂,
+            mean_total_incidence₁ = mean_total_incidence₁,
+            std_total_incidence₁ = std_total_incidence₁,
+            mean_total_incidence₂ = mean_total_incidence₂,
+            std_total_incidence₂ = std_total_incidence₂,
             mean_serocoverted₁ = mean_serocoverted₁,
             std_serocoverted₁ = std_serocoverted₁,
             mean_serocoverted₂=mean_serocoverted₂,
@@ -261,7 +276,7 @@ function get_Rt(model::KenyaCoVSD.CoVAreaModel,projection_date::Date;seroreversi
         ct2 = [KenyaCoVSD.ct_kenya(t,ct_min2) for t = 1:length(sol[:S₁][2:end])]
         Rt₁[:,k] .= new_variant_multiplier.*Reff.*(((ct1.*sol[:S₁][2:end]./N₁).*MCMCdraws.ϵ[k].*ct1) .+ ((ct2.*sol[:S₂][2:end]./N₂).*(1 .- MCMCdraws.ϵ[k]).*ct1))
         Rt₂[:,k] .= new_variant_multiplier.*Reff.*(((ct1.*sol[:S₁][2:end]./N₁).*(1 .- MCMCdraws.ϵ[k]).*ct2) .+ ((ct2.*sol[:S₂][2:end]./N₂).*MCMCdraws.ϵ[k].*ct2))
-        
+
     end
 
 
