@@ -75,17 +75,24 @@ random_trial_middle_age_grp_neg = random_trial_middle_age_grp_num-random_trial_m
 uerr_middle_age_random_trial = invlogcdf(Beta(random_trial_middle_age_grp_pos + 0.5,random_trial_middle_age_grp_neg + 0.5),log(0.975)) - random_trial_middle_age_grp_pos/random_trial_middle_age_grp_num
 lerr_middle_age_random_trial =random_trial_middle_age_grp_pos/random_trial_middle_age_grp_num - invlogcdf(Beta(random_trial_middle_age_grp_pos + 0.5,random_trial_middle_age_grp_neg + 0.5),log(0.025))
 
-num_pos_kibera = 222
-tot_pos_kibera = 511
+num_pos_kibera = 37
+tot_pos_kibera = 87
 num_neg_kibera = tot_pos_kibera-num_pos_kibera
 uerr_all_kibera = invlogcdf(Beta(num_pos_kibera + 0.5,num_neg_kibera + 0.5),log(0.975)) - num_pos_kibera/tot_pos_kibera
 lerr_all_kibera = num_pos_kibera/tot_pos_kibera - invlogcdf(Beta(num_pos_kibera + 0.5,num_neg_kibera + 0.5),log(0.025))
 
-kibera_middle_age_grp_pos = 191
-kibera_middle_age_grp_num = 384
-kibera_middle_age_grp_neg = kibera_middle_age_grp_num-kibera_middle_age_grp_pos
-uerr_middle_age_kibera = invlogcdf(Beta(kibera_middle_age_grp_pos + 0.5,kibera_middle_age_grp_neg + 0.5),log(0.975)) - kibera_middle_age_grp_pos/kibera_middle_age_grp_num
-lerr_middle_age_kibera =kibera_middle_age_grp_pos/kibera_middle_age_grp_num - invlogcdf(Beta(kibera_middle_age_grp_pos + 0.5,kibera_middle_age_grp_neg + 0.5),log(0.025))
+num_pos_roysambu = 8 + 19 + 30
+tot_pos_roysambu = 59 + 61 + 98
+num_neg_roysambu = tot_pos_roysambu-num_pos_roysambu
+uerr_all_roysambu = invlogcdf(Beta(num_pos_roysambu + 0.5,num_neg_roysambu + 0.5),log(0.975)) - num_pos_roysambu/tot_pos_roysambu
+lerr_all_roysambu = num_pos_roysambu/tot_pos_roysambu - invlogcdf(Beta(num_pos_roysambu + 0.5,num_neg_roysambu + 0.5),log(0.025))
+
+
+# kibera_middle_age_grp_pos = 191
+# kibera_middle_age_grp_num = 384
+# kibera_middle_age_grp_neg = kibera_middle_age_grp_num-kibera_middle_age_grp_pos
+# uerr_middle_age_kibera = invlogcdf(Beta(kibera_middle_age_grp_pos + 0.5,kibera_middle_age_grp_neg + 0.5),log(0.975)) - kibera_middle_age_grp_pos/kibera_middle_age_grp_num
+# lerr_middle_age_kibera =kibera_middle_age_grp_pos/kibera_middle_age_grp_num - invlogcdf(Beta(kibera_middle_age_grp_pos + 0.5,kibera_middle_age_grp_neg + 0.5),log(0.025))
 
 
 ##
@@ -123,18 +130,24 @@ scatter!([mean([(Date(2020,11,2) - Date(2020,2,24)).value,(Date(2020,11,23) - Da
         markershape = :square,mc = 3)
 
 scatter!([mean([(Date(2020,11,2) - Date(2020,2,24)).value,(Date(2020,11,23) - Date(2020,2,24)).value])],
-        [random_trial_middle_age_grp_pos/random_trial_middle_age_grp_num],lab = "Nairobi randomised survey: 10-60 year olds (not used in fitting)",
+        [random_trial_middle_age_grp_pos/random_trial_middle_age_grp_num],lab = "Nairobi randomised survey: 10-60 year olds",
         ms = 8,yerr = ([lerr_middle_age_random_trial],[uerr_middle_age_random_trial]),xerr = ([10.5],[10.5]),
         markershape = :diamond,mc = 3)
 
-# scatter!([mean([(Date(2020,11,27) - Date(2020,2,24)).value,(Date(2020,12,5) - Date(2020,2,24)).value])],[num_pos_kibera/tot_pos_kibera],
-#         ms = 8,yerr = ([lerr_all_kibera],[uerr_all_kibera]),xerr = ([4],[4]),lab = "Kibera random household survey : all ages (not used in fitting)",
-#         markershape = :square,mc = 1)
+scatter!([mean([(Date(2020,11,2) - Date(2020,2,24)).value,(Date(2020,11,23) - Date(2020,2,24)).value])],
+        [num_pos_kibera/tot_pos_kibera],
+        ms = 8,yerr = ([lerr_all_kibera],[uerr_all_kibera]),xerr = ([10.5],[10.5]),lab = "Nairobi randomised survey: Kibera",
+        markershape = :square,mc = 1)
+
+scatter!([mean([(Date(2020,11,2) - Date(2020,2,24)).value,(Date(2020,11,23) - Date(2020,2,24)).value])],
+        [num_pos_roysambu/tot_pos_roysambu],
+        ms = 8,yerr = ([lerr_all_roysambu],[uerr_all_roysambu]),xerr = ([10.5],[10.5]),lab = "Nairobi randomised survey: low poverty/informal settlement sub-counties",
+        markershape = :square,mc = 2)        
 
 # scatter!([mean([(Date(2020,11,27) - Date(2020,2,24)).value,(Date(2020,12,5) - Date(2020,2,24)).value])],[kibera_middle_age_grp_pos/kibera_middle_age_grp_num],
 #         ms = 8,yerr = ([lerr_middle_age_kibera],[uerr_middle_age_kibera]),xerr = ([4],[4]),lab = " Kibera random household survey : 10-60 year olds (not used in fitting)",
 #         markershape = :diamond,mc = 1)
 
-savefig("plots/nairobi_seroplot.png")
+# savefig("plots/nairobi_seroplot.png")
 
 

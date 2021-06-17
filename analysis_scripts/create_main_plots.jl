@@ -141,8 +141,8 @@ plot!(deaths_plt,4:(n-3),cumsum(kenya_deaths_forecast_mv_av),
 
 
 ## Kenya Serology plot
-# plotlyjs()
-gr()
+plotlyjs()
+# gr()
 xticktimes = [((Date(2020,2,1) + Month(k))- Date(2020,2,24)).value for k = 1:18 ]
 xticklabs = [monthname(k)[1:3]*"/20" for k = 3:12]
 xticklabs = vcat(xticklabs,[monthname(k)[1:3]*"/21" for k = 1:8])
@@ -238,7 +238,7 @@ plot!(plt_sero,kenya_infections_forecast./sum(N_kenya),
         lab = "Model fit: Overall Kenyan population exposure (unadjusted)",
         color = :red)
 
-savefig(plt_sero,"plots/kenya_sero.png")
+# savefig(plt_sero,"plots/kenya_sero.png")
 
 ## Kenyan incidence
 
