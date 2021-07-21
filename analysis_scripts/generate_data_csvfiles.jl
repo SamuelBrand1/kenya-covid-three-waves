@@ -80,4 +80,6 @@ for (i,filename) in enumerate(modelfitfilenames)
     dataS3[!,model.areaname*"_sero_neg"] = model.sero_cases[:,2,1]
     dataS4[!,model.areaname*"_deaths_pos"] = model.deaths
 end
-
+CSV.write("opendatacsvs/dataS2.csv",dataS2)
+CSV.write("opendatacsvs/dataS3.csv",dataS3)
+CSV.write("opendatacsvs/dataS4.csv",dataS4)
