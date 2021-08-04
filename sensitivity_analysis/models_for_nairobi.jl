@@ -91,7 +91,7 @@ baseline_adam_params = (β₁ = 0.9,
                         ϵ = 1e-8,
                         total_num_steps = 500,
                         averaging_num_steps=100,
-                        λ = 1e7)
+                        λ = 1e6)
 
 ## Get first draw from MCMC with baseline ct estimate
 inferparameters!(nai_one_group,2000,trans_one_group,0.05,D,cts₀)
