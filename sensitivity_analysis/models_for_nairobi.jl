@@ -134,4 +134,11 @@ push!(EM_steps,(vcat(baseline_ct,exp.(log_ct_fit)),mean_log_LL))
 plot(EM_steps[1][1])
 plot!(EM_steps[2][1])
 plot!(EM_steps[3][1])
-scatter(1:length(EM_steps),[step[2] for step in EM_steps])
+plot!(EM_steps[4][1])
+plot!(EM_steps[5][1])
+plot!(EM_steps[6][1])
+
+scatter(1:length(EM_steps),[step[2] for step in EM_steps],lab= "")
+
+
+@save("sensitivity_analysis/nai_EM_fit.jld2",nai_one_group,EM_steps)
