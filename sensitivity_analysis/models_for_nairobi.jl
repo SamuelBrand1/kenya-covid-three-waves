@@ -2,8 +2,8 @@
 
 
 ## Active and precompile the KenyaCoVSD environment
-using Pkg
-Pkg.activate(".");Pkg.precompile()
+# using Pkg
+# Pkg.activate(".");Pkg.precompile()
 using StatsPlots,Dates,JLD2,Statistics,Optim,Parameters,Distributions,DataFrames,CSV
 using DynamicHMC,OrdinaryDiffEq,DiffEqCallbacks
 using NamedArrays,TransformVariables,LogDensityProblems,LinearAlgebra,BlackBoxOptim,Random
@@ -83,9 +83,7 @@ plot(p[1])
 
 include("one_group_model.jl");
 include("one_group_inference.jl");
-
-inferparameters!(nai_one_group,2000,trans_one_group,0.05,D,cts₀)
-# @save("sensitivity_analysis/nai_one_group_rd_1.jld2",nai_one_group,cts₀)
+include("one_group_fitting_ct.jl");
 
 baseline_adam_params = (β₁ = 0.9,
                         β₂ = 0.9,
@@ -93,12 +91,47 @@ baseline_adam_params = (β₁ = 0.9,
                         ϵ = 1e-8,
                         total_num_steps = 500,
                         averaging_num_steps=100,
-                        λ = 1e6)
+                        λ = 1e7)
 
-log_ct_fit,mean_log_LL = ADAM_optim(log.(cts₀[25:end]),
+## Get first draw from MCMC with baseline ct estimate
+inferparameters!(nai_one_group,2000,trans_one_group,0.05,D,cts₀)
+@load("sensitivity_analysis/nai_one_group_rd_1.jld2")
+
+final_LL = 0
+for k = 1:size(nai_one_group.MCMC_results.chain,1)
+        θ = NamedTuple{Tuple(keys(nai_one_group.MCMC_results.chain))}([nai_one_group.MCMC_results.chain[k,n,1] for n = 1:size(nai_one_group.MCMC_results.chain,2)])
+        final_LL += ll_onegroup_newvariant_infboost_ct(θ,nai_one_group,0.0,cts₀)
+end
+final_LL = (final_LL/size(nai_one_group.MCMC_results.chain,1)) - ct_penalty(baseline_adam_params.λ,cts₀)
+
+EM_steps = [(cts₀,final_LL)]
+
+# @save("sensitivity_analysis/nai_one_group_rd_1.jld2",nai_one_group,cts₀)
+
+log_ct_fit,mean_log_LL = ADAM_optim(log.(EM_steps[end][1][25:end]),
                                         random_grad_log_ct!,
                                         baseline_adam_params,
                                         nai_one_group,
                                         baseline_ct,
                                         trans_one_group,
                                         0.0)
+
+push!(EM_steps,(vcat(baseline_ct,exp.(log_ct_fit)),mean_log_LL))
+
+
+inferparameters!(nai_one_group,500,trans_one_group,0.05,D,EM_steps[end][1])
+
+log_ct_fit,mean_log_LL = ADAM_optim(log.(EM_steps[end][1][25:end]),
+                                        random_grad_log_ct!,
+                                        baseline_adam_params,
+                                        nai_one_group,
+                                        baseline_ct,
+                                        trans_one_group,
+                                        0.0)
+
+push!(EM_steps,(vcat(baseline_ct,exp.(log_ct_fit)),mean_log_LL))
+
+plot(EM_steps[1][1])
+plot!(EM_steps[2][1])
+plot!(EM_steps[3][1])
+scatter(1:length(EM_steps),[step[2] for step in EM_steps])

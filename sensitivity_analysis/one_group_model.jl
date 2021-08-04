@@ -57,9 +57,9 @@ function ll_onegroup_newvariant_infboost(θ,model::KenyaCoVSD.CoVAreaModel,seror
     clustering_factor_PCR = 0.5
     M_PCR = 30.
     T = eltype(R₀)
-	if T <: Real
-		T = eltype(cts)
-	end
+	# if T <: Real
+	# 	T = eltype(cts)
+	# end
 
     #Set transmission parameters with daily cts appended on end
     p = convert.(T,vcat([R₀,α,γ,σ,N,ω],cts))
@@ -81,13 +81,13 @@ function ll_onegroup_newvariant_infboost(θ,model::KenyaCoVSD.CoVAreaModel,seror
 
     #Solve for daily incidence by age (not currently broken down by severity of disease)
     LL = T(0.)
-    # try
-        sol = solve(prob, BS3();tspan = (0,aprilendpoint),
+    try
+        sol = solve(prob, BS3();tspan = (0,aprilendpoint),reltol = 1e-3,
 					callback = variant_cb,
 					u0=u0,
 					p=p,
 					saveat = 1,
-					verbose = true,
+					verbose = false,
                     isoutofdomain=(u,p,t) -> any(x -> x < 0, u))
 
         ι = diff(sol[:C])
@@ -137,9 +137,103 @@ function ll_onegroup_newvariant_infboost(θ,model::KenyaCoVSD.CoVAreaModel,seror
             end
 
         end
-    # catch
-    #     LL = T(-Inf)
-    # end
+    catch
+        LL = T(-Inf)
+    end
+    return LL::T
+end
+
+function ll_onegroup_newvariant_infboost_ct(θ,model::KenyaCoVSD.CoVAreaModel,seroreversionrate,cts;σ = 0.16,ω = 1/180)
+    @unpack PCR_cases,sero_cases,baseline_sero_array,PCR_array,sero_sensitivity,sero_specificity,N,M_BB,prob,α,γ,relative_testing_rate = model
+    @unpack R₀,χ,p_test,extra_transmissibility,influx_exposed_new_variant,p_test_boost,χ_boost,E₀ = θ
+
+    #Set variance scalers
+    clustering_factor_PCR = 0.5
+    M_PCR = 30.
+    # T = eltype(R₀)
+	# if T <: Real
+    T = eltype(cts)
+	# end
+
+    #Set transmission parameters with daily cts appended on end
+    p = convert.(T,vcat([R₀,α,γ,σ,N,ω],cts))
+    u0 = convert.(T,[N,E₀,0.,0.,0.,0.,0.])
+
+    #Create new variant introduction
+    function new_variant_effect!(integrator)
+        integrator.p[1] *= extra_transmissibility
+        integrator.u[2] += influx_exposed_new_variant
+    end
+
+    janendpoint = (Date(2021,1,30) - Date(2020,2,20)).value
+	aprilendpoint = (Date(2021,4,30) - Date(2020,2,20)).value
+    variant_cb = PresetTimeCallback([janendpoint],new_variant_effect!)
+
+    #Sero-waning
+    sero_array = vcat(baseline_sero_array[1:30],[(1-seroreversionrate)^k for k in 1:length(baseline_sero_array[31:end])])
+
+
+    #Solve for daily incidence by age (not currently broken down by severity of disease)
+    LL = T(0.)
+    try
+        sol = solve(prob, BS3();tspan = (0,aprilendpoint),reltol = 1e-3,
+					callback = variant_cb,
+					u0=u0,
+					p=p,
+					saveat = 1,
+					verbose = false,
+                    isoutofdomain=(u,p,t) -> any(x -> x < 0, u))
+
+        ι = diff(sol[:C])
+        ι_sero = diff(sol[:C_sero])
+        PCR = KenyaCoVSD.simple_conv(ι,PCR_array)
+    	sero = sero_sensitivity.*KenyaCoVSD.simple_conv(ι_sero,sero_array)
+
+        #Calculate log-likelihood for PCR testing
+        for t in 55:janendpoint
+            #Convert from μ,α parameterisation to p,r parameterisation for using Neg. binomial model
+            μ = relative_testing_rate[t]*p_test*PCR[t]*1e-4 + 0.001 #Covert approximately from total probability of detection in % to daily probability of detection
+            σ² = μ + clustering_factor_PCR*μ^2
+            p_negbin = 1 - (clustering_factor_PCR*μ^2/σ²)
+            r_negbin  = 1/clustering_factor_PCR
+            LL += logpdf(NegativeBinomial(r_negbin,p_negbin),PCR_cases[t,1])#likelihood contribution from PCR testing --- positive case detection
+
+            if PCR_cases[t,2] >= 0 #Negative tests available
+                p_PCR_pred = (χ*PCR[t]/((χ-1)*PCR[t] + N)) + 0.001
+                #Convert from p_PCR,inv_M_PCR parameterisation of Beta-Binomial to standard α,β parameterisation
+                LL += logpdf(BetaBinomial(PCR_cases[t,2],p_PCR_pred*M_PCR,(1-p_PCR_pred)*M_PCR),PCR_cases[t,1])#likelihood contribution from PCR testing --- proportion postive
+            end
+        end
+
+        #Calculate log-likelihood for PCR testing after new variant introduction
+        for t in (janendpoint+1):min(size(PCR_cases,1),size(PCR,1))
+            #Convert from μ,α parameterisation to p,r parameterisation for using Neg. binomial model
+            μ = p_test_boost*relative_testing_rate[t]*p_test*PCR[t]*1e-4 + 0.001
+            σ² = μ + clustering_factor_PCR*μ^2
+            p_negbin = 1 - (clustering_factor_PCR*μ^2/σ²)
+            r_negbin  = 1/clustering_factor_PCR
+            LL += logpdf(NegativeBinomial(r_negbin,p_negbin),PCR_cases[t,1])#likelihood contribution from PCR testing --- positive case detection
+
+            if PCR_cases[t,2] >= 0 #Negative tests available
+                p_PCR_pred = (χ_boost*χ*PCR[t]/((χ_boost*χ-1)*PCR[t] + N))  + 0.001
+                #Convert from p_PCR,inv_M_PCR parameterisation of Beta-Binomial to standard α,β parameterisation
+                LL += logpdf(BetaBinomial(PCR_cases[t,2],p_PCR_pred*M_PCR,(1-p_PCR_pred)*M_PCR),PCR_cases[t,1])#likelihood contribution from PCR testing that day in that age group
+            end
+        end
+        #Calculate log-likelihood contribution from serological testing
+        for t in 1:min(size(sero_cases,1),size(sero,1))
+            #Convert from the p_hat,M_BB parameterisation of the Betabinomial distribution to the α_BB,β_BB parameterisation
+            #Overall serological testing
+            if sero_cases[t,1,1] + sero_cases[t,2,1] > 0
+                p_sero_pred  = sero[t]/N
+                p_hat  = p_sero_pred + (1-p_sero_pred)*(1-sero_specificity)
+                LL += logpdf(BetaBinomial(sero_cases[t,1,1] + sero_cases[t,2,1],M_BB*p_hat,M_BB*(1-p_hat)),sero_cases[t,1,1])#Likelihood contribution from sero testing
+            end
+
+        end
+    catch
+        LL = T(-Inf)
+    end
     return LL::T
 end
 

@@ -13,7 +13,7 @@ In-place calculation of gradient of contact rate negative log-posterior density 
 With sero-waning `p_waning`. This is based on the log-ct value (to maintain positivity)
 """
 function ct_neg_log_density_grad!(grad,log_cts,θ,model::KenyaCoVSD.CoVAreaModel,baseline_contact,λ,p_waning)
-        l = log_cts -> -model.log_likelihood(θ,model,p_waning,vcat(baseline_contact,exp.(log_cts))) - ct_penalty(λ,vcat(baseline_contact,exp.(log_cts)))
+        l = log_cts -> -ll_onegroup_newvariant_infboost_ct(θ,model,p_waning,vcat(baseline_contact,exp.(log_cts))) + ct_penalty(λ,vcat(baseline_contact,exp.(log_cts)))
         ForwardDiff.gradient!(grad,l,log_cts)
         return nothing
 end
@@ -26,7 +26,7 @@ In-place calculation for gradient of the log-contact rate with sero-waning for a
 """
 function random_grad_log_ct!(grad,log_cts,model::KenyaCoVSD.CoVAreaModel,baseline_contact,λ,trans_name,p_serowaning)
 	k = rand(1:size(model.MCMC_results.chain,1))
-	θ = TransformVariables.transform(trans_name,[model.MCMC_results.chain[1,n,1] for n = 1:size(model.MCMC_results.chain,2)])
+	θ = NamedTuple{Tuple(keys(model.MCMC_results.chain))}([model.MCMC_results.chain[k,n,1] for n = 1:size(model.MCMC_results.chain,2)])
 	ct_neg_log_density_grad!(grad,log_cts,θ,model,baseline_contact,λ,p_serowaning)
 	return nothing
 end
@@ -87,8 +87,8 @@ function ADAM_optim(X_opt::Vector{Float64},
 	X̂ = zeros(length(X_opt))
 
 	for n = 0:(total_num_steps-1)
-		if n%100 == 0
-			prinln("On ADAM step $(n)")
+		if n%10 == 0
+			println("On ADAM step $(n)")
 		end
 		grad_func!(grad,X_opt,model,baseline_contact,λ,trans_name,p_waning)
 		ADAM_step!(X_opt,
@@ -104,10 +104,10 @@ function ADAM_optim(X_opt::Vector{Float64},
 	end
 	final_LL = 0
 	for k = 1:size(model.MCMC_results.chain,1)
-		θ = TransformVariables.transform(trans_name,[model.MCMC_results.chain[k,n,1] for n = 1:size(model.MCMC_results.chain,2)])
-		final_LL += model.log_likelihood(θ,model,p_waning,vcat(baseline_contact,exp.(X̂)))
+		θ = NamedTuple{Tuple(keys(model.MCMC_results.chain))}([model.MCMC_results.chain[k,n,1] for n = 1:size(model.MCMC_results.chain,2)])
+		final_LL += ll_onegroup_newvariant_infboost_ct(θ,model,p_waning,vcat(baseline_contact,exp.(X̂)))
 	end
-	final_LL = final_LL/size(model.MCMC_results.chain,1)
+	final_LL = (final_LL/size(model.MCMC_results.chain,1)) - ct_penalty(λ,vcat(baseline_contact,exp.(X̂)))
 
 	return X̂,final_LL
 end
