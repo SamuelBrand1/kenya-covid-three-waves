@@ -48,11 +48,60 @@ function twoSEStransmission(du,u,p,t)
     du[14] = ct2*(S₂/N₂)*λ₂
 end
 
+"""
+    function twoSEStransmission_with_lower_transmissibility(du,u,p,t)
+
+In-place creation of vector field for the transmission model. Model where previously infected are less transmissible.
+"""
+function twoSEStransmission_with_lower_transmissibility(du,u,p,t)
+    #Get state
+	S₁,E₁,I₁,R₁,W₁,C₁,S₂,E₂,I₂,R₂,W₂,C₂,C_sero₁,C_sero₂,EW₁,IW₁,EW₂,IW₂ = u
+    #Get parameters
+	R₀,α,γ,ϵ,σ,N₁,N₂,ω,schooleffect,ct_min1,ct_min2,ι = p
+    #Adjust for schools being open or shut
+    Reff = R₀*(t < 24 || t ≥ 319) + R₀*schooleffect*(t≥ 24 && t< 319) 
+    #Rate of visiting POIs for lower and higher SES groups
+    ct1 = ct_kenya(t,ct_min1)
+    ct2 = ct_kenya(t,ct_min2)
+    #Force of infection on lower and higher SES individuals visiting POIs
+    λ₁ = γ*Reff*(ct1*ϵ*(I₁ + ι*IW₁) + ct2*(1-ϵ)*(I₂ + ι*IW₂))
+    λ₂ = γ*Reff*(ct1*(1-ϵ)*(I₁ + ι*IW₁) + ct2*ϵ*(I₂ + ι*IW₂))
+    #Dynamics
+	du[1] = -ct1*(S₁/N₁)*λ₁
+	du[2] = ct1*(S₁/N₁)*λ₁ - α*E₁
+	du[3] = α*E₁ - γ*I₁
+	du[4] = γ*I₁ + γ*IW₁ - ω*R₁
+	du[5] = ω*R₁ - σ*ct1*(W₁/N₁)*λ₁
+	du[6] = ct1*((S₁+σ*W₁)/N₁)*λ₁
+	du[7] = -ct2*(S₂/N₂)*λ₂
+	du[8] = ct2*(S₂/N₂)*λ₂ - α*E₂
+	du[9] = α*E₂ - γ*I₂
+	du[10] = γ*I₂ + γ*IW₂ - ω*R₂
+	du[11] = ω*R₂ - σ*ct2*(W₂/N₂)*λ₂
+	du[12] = ct2*((S₂+σ*W₂)/N₂)*λ₂
+    du[13] = ct1*(S₁/N₁)*λ₁
+    du[14] = ct2*(S₂/N₂)*λ₂
+    du[15] = ct1*σ*(W₁/N₁)*λ₁ - α*EW₁
+    du[16] = α*EW₁ - γ*IW₁
+    du[17] = ct2*σ*(W₂/N₂)*λ₂ - α*EW₂
+    du[18] = α*EW₂ - γ*IW₂
+end
+
+
 function build_prob()
     u0 = [4.3e6*0.7 - 100.,100.,0.,0.,0.,0.,
             4.3e6*0.3 - 100.,100.,0.,0.,0.,0.,
             0.0,0.0]
     f = ODEFunction(twoSEStransmission;syms = [:S₁,:E₁,:I₁,:R₁,:W₁,:C₁,:S₂,:E₂,:I₂,:R₂,:W₂,:C₂,:C_sero₁,:C_sero₂])
+    return ODEProblem(f,u0,(0,365))
+end
+
+function build_prob(::Val{:lower_trans})
+    u0 = [4.3e6*0.7 - 100.,100.,0.,0.,0.,0.,
+            4.3e6*0.3 - 100.,100.,0.,0.,0.,0.,
+            0.0,0.0,
+            0.0,0.0,0.0,0.0]
+    f = ODEFunction(twoSEStransmission_with_lower_transmissibility;syms = [:S₁,:E₁,:I₁,:R₁,:W₁,:C₁,:S₂,:E₂,:I₂,:R₂,:W₂,:C₂,:C_sero₁,:C_sero₂,:EW₁,:IW₁,:EW₂,:IW₂])
     return ODEProblem(f,u0,(0,365))
 end
 
