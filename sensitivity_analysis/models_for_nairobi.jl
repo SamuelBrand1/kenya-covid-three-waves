@@ -8,7 +8,7 @@ using StatsPlots,Dates,JLD2,Statistics,Optim,Parameters,Distributions,DataFrames
 using DynamicHMC,OrdinaryDiffEq,DiffEqCallbacks
 using NamedArrays,TransformVariables,LogDensityProblems,LinearAlgebra,BlackBoxOptim,Random
 using DynamicHMC.Diagnostics,MCMCDiagnostics,MCMCChains,ForwardDiff
-using Plots.PlotMeasures
+using Plots.PlotMeasures,LogExpFunctions
 using CountTimeSeries
 import KenyaCoVSD
 #Load data for all Kenya
@@ -37,6 +37,8 @@ modelscores = DataFrame(model = String[],
                         DIC = Union{Float64,String}[],
                         lpd_cases = Float64[],
                         lpd_serology = Float64[])
+
+
 
 ## Model 1: Simple INGARCH model
 #Can get find the best AIC model here, but what about lookahead predictions?
@@ -142,3 +144,21 @@ scatter(1:length(EM_steps),[step[2] for step in EM_steps],lab= "")
 
 
 @save("sensitivity_analysis/nai_EM_fit.jld2",nai_one_group,EM_steps)
+
+
+## Model 3: lower 25%, middle 50% and upper 25% wealth percentiles
+
+include("three_group_model.jl")
+
+l_area(x) = nai_three_group.log_likelihood(x,nai_three_group,0.0) + nai_three_group.log_priors(x)
+f(x) = -transform_logdensity(trans_three_groups, l_area,x)
+searchrange = fill((-3.,3.),TransformVariables.dimension(trans_three_groups))
+res = bboptimize(f; SearchRange = searchrange,PopulationSize=500,MaxSteps=2000)
+q₀ = best_candidate(res)
+θ₀ = TransformVariables.transform(trans_three_groups,q₀)
+inferparameters!(nai_three_group,2000,trans_three_groups,0.05,D::Diagonal,q₀;serowaningrate = 1/365,num_chains = 1)
+
+x₀ = rand(20)
+
+@time f(x₀)
+
