@@ -80,3 +80,15 @@ end
 function (model::KenyaCoVSD.CoVAreaModel)(θ)
     model.log_likelihood(θ,model,1/180) + model.log_priors(θ)
 end
+
+"""
+    function modeldic(areamodel::CoVAreaModel)
+
+Calculate the deviance information criterion (DIC) for the posterior parameter draws in `areamodel`.
+"""
+function modeldic(areamodel::CoVAreaModel)
+        D = -2*areamodel.MCMC_results.logL
+        D̄ = mean(D)
+        p_D = 0.5*var(D)
+        return D̄ + p_D
+end
