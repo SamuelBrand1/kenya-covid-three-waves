@@ -1,7 +1,7 @@
 name = "KenyaCoVSD"
 uuid = "b295c1e8-771c-4583-9b78-c5cce41185e2"
 authors = ["Samuel Brand <S.Brand@warwick.ac.uk>", "John Ojal <JOjal@kemri-wellcome.org>", "Rabia Aziza <Rabia.Aziza@warwick.ac.uk>"]
-version = "0.1.0"
+version = "1.1"
 
 [deps]
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"

@@ -153,15 +153,11 @@ include("three_group_model.jl")
 l_area(x) = nai_three_group.log_likelihood(x,nai_three_group,0.0) + nai_three_group.log_priors(x)
 f(x) = -transform_logdensity(trans_three_groups, l_area,x)
 searchrange = fill((-3.,3.),TransformVariables.dimension(trans_three_groups))
-res = bboptimize(f; SearchRange = searchrange,PopulationSize=500,MaxSteps=2000)
+res = bboptimize(f; SearchRange = searchrange,PopulationSize=500,MaxSteps=5000)
 q₀ = best_candidate(res)
 θ₀ = TransformVariables.transform(trans_three_groups,q₀)
 KenyaCoVSD.inferparameters!(nai_three_group,2000,trans_three_groups,0.05,D,q₀;serowaningrate = 0.0)
-
+@save("nai_three_group.jld2",nai_three_group)
 x₀ = rand(20)
 
 @time f(x₀)
-
-
-##Model 4:
-

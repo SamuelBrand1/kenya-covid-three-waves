@@ -137,8 +137,8 @@ function inferparameters!(model,samples,trans,stepsize::Float64,D::Diagonal,q₀
 
         results = mcmc_with_warmup(Random.GLOBAL_RNG, ∇ℓ, samples,
                                 initialization = (q = q₀,κ=GaussianKineticEnergy(D),ϵ = stepsize),
-                                warmup_stages = fixed_stepsize_warmup_stages(M=Symmetric),
-                                reporter = NoProgressReport())
+                                warmup_stages = fixed_stepsize_warmup_stages(M=Symmetric))#,
+                                # reporter = NoProgressReport())
         # results = mcmc_with_warmup(Random.GLOBAL_RNG, ∇ℓ, samples,
         #                         initialization = (q = q₀,κ=GaussianKineticEnergy(D)))
 
@@ -163,7 +163,7 @@ function inferparameters!(model,samples,trans,stepsize::Float64,D::Diagonal,q₀
 
         chn = Chains(val,[String(k) for k in keys(transformed_results[1])])
 
-        model.MCMC_results = MCMCResults(chn,
+        model.MCMC_results = KenyaCoVSD.MCMCResults(chn,
                                         [l_area(transformed_results[i]) - model.log_priors(transformed_results[i]) for i = 1:length(transformed_results)],
                                         results.tree_statistics)
 

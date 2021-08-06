@@ -4,7 +4,7 @@ using Distributed
 
 ## add number of processors desired
 
-addprocs(1)
+addprocs(4)
 
 ## Load relevant code into scope for each worker
 
