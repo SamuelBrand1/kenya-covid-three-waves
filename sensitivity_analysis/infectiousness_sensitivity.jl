@@ -50,7 +50,7 @@ scenarios = [(σ = 0.16,ω = 1/180,ι = 0.5, scenario_name = "reduced_inf"),
 
 
 ##Fit each scenario
-@distributed for i = 1:length(scenarios)
+@distributed for i in [2]#1:length(scenarios)
     scenario = scenarios[i]
     model = KenyaCoVSD.CoVAreaModel("Nairobi",ll_twogroup_newvariant_infboost_var_trans,KenyaCoVSD.priors_twogroup_newvariant_cities;
                 case_data = linelist_data_with_pos_neg,
