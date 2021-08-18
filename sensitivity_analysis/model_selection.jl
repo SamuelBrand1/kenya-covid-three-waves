@@ -94,7 +94,6 @@ end
 @load("sensitivity_analysis/nairobi_fits/nai_EM_fit.jld2")
 include("../analysis_scripts/fitting_methods.jl");
 
-nai_one_group.MCMC_results.chain
 ct_fitted = EM_steps[end][1]
 N = sum(N_kenya[:,"Nairobi"])
 plot(ct_fitted)
@@ -121,10 +120,12 @@ sol = solve(nai_one_group.prob, BS3();tspan = (0,(Date(2021,6,1) - Date(2020,2,2
 prop_PCR_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
 no_neg_PCR_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
 prop_sero_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
-
-sero_array = vcat(nai_one_group.baseline_sero_array[1:30],[(1-0)^k for k in 1:length(nai_one_group.baseline_sero_array[31:end])])
+sero_array = vcat(nai_one_group.baseline_sero_array[1:30],[(1-0)^k for k in 1:500])
 
 gather_uncertainty_one_group!(nai_one_group,prop_PCR_pos_mat,no_neg_PCR_pos_mat,prop_sero_pos_mat,sero_array)
+
+pred_prop_sero_pos = get_credible_intervals(prop_sero_pos_mat)
+plot(pred_prop_sero_pos.pred./nai_one_group.N,lab = "")
 
 
 

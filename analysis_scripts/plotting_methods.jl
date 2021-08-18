@@ -134,7 +134,6 @@ function plot_pop_exposure(fit,serological_data,serology_data,N_kenya)
         n = size(fit.pred.mean_PCR_forecast,1)
         n_1 = size(linelist_data_with_pos_neg.cases,1) - 14
 
-        fit = condensed_county_forecasts[30]
         uprname = uppercase(fit.name)
 
         xticktimes = [((Date(2020,2,1) + Month(k))- Date(2020,2,24)).value for k = 1:18 ]
@@ -170,8 +169,8 @@ function plot_pop_exposure(fit,serological_data,serology_data,N_kenya)
         N = sum(N_kenya[:,fit.name])
         county_serology_forecast_nw = county_sero_pos_nw./N
         std_kenya_serology_forecast = sqrt.(((1.0/sum(N_kenya[:,fit.name]))^2 ).*(fit.pred.std_serocoverted₁.^2 .+ fit.pred.std_serocoverted₂.^2))
-        county_infections_forecast = cumsum(fit.pred.mean_incidence₁ .+ fit.pred.mean_incidence₂)
-        std_county_infections_forecast = sqrt.(cumsum((fit.pred.std_incidence₁ .+ fit.pred.std_incidence₂).^2))
+        county_infections_forecast = cumsum(fit.pred.mean_incidence₁[1:524] .+ fit.pred.mean_incidence₂[1:524])
+        std_county_infections_forecast = sqrt.(cumsum((fit.pred.std_incidence₁[1:524] .+ fit.pred.std_incidence₂[1:524]).^2))
 
         plt_sero = scatter(xs_mondays[seroidxs.*rnd1_2_idxs],county_weekly_sero_pos_rnd3[seroidxs.*rnd1_2_idxs]./county_weekly_sero_total_rnd3[seroidxs.*rnd1_2_idxs],
                 lab = "Weekly KNBTS: rounds 1 and 2 (used in fitting)",
