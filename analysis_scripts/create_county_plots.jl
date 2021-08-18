@@ -36,5 +36,5 @@ for filename in fitfiles
     fit_dict = load(filename)
     model = fit_dict[first(keys(fit_dict))]
     plt_Rt = plot_Rt_both_SES_groups(model,Date(2021,6,1))
-    savefig(plt_Rt,"plots/county_plots/Rt/$(fit.name)_Rt.png")
+    savefig(plt_Rt,"plots/county_plots/Rt/$(model.areaname)_Rt.png")
 end
