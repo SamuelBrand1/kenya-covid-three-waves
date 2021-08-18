@@ -280,7 +280,7 @@ plot!(plt_inc,kenya_group2_incidence./1e5,
         legend = :topleft,
         ribbon = 3*sqrt.(var_kenya_group2_incidence)./1e5)
 
-savefig(plt_inc,"plots/kenya_incidence_SES.png")
+# savefig(plt_inc,"plots/kenya_incidence_SES.png")
 
 ## Rt plots
 @load("modelfits/Nairobi_model.jld2")

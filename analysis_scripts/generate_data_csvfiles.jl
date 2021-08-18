@@ -7,7 +7,7 @@ include("fitting_methods.jl");
 ## Get all parameter names
 modelfitfilenames = readdir("modelfits",join = true)
 modeldict = load(modelfitfilenames[1])
-model = modeldict[first(keys(modeldict))] 
+model = modeldict[first(keys(modeldict))]
 chn = model.MCMC_results.chain
 parameternames = names(chn)
 
@@ -16,6 +16,7 @@ q = quantile(chn)
 m = mean(chn)
 
 parameterfits = fill("",47,length(parameternames))
+mean_parameterfits = fill(0.0,47,length(parameternames))
 
 for (i,filename) in enumerate(modelfitfilenames)
     modeldict = load(filename)
@@ -27,6 +28,7 @@ for (i,filename) in enumerate(modelfitfilenames)
     for j = 1:length(parameternames)
         str = "$(round(m.nt.mean[j],digits = 3)) ($(round(q.nt[2][j],digits = 3)),$(round(q.nt[end][j],digits = 3)))"
         parameterfits[i,j] = str
+        mean_parameterfits[i,j] = m.nt.mean[j]
     end
 end
 
@@ -52,13 +54,21 @@ end
 ##Combine fits into one document
 countynames = [fit.name for fit in condensed_county_forecasts]
 data = [countynames parameterfits string.(fatality_detection_percent) population_exposure_fits]
+_data = [countynames mean_parameterfits]
 colnames = [:county_name;parameternames;[:fatality_detection_lower_SES,:fatality_detection_upper_SES,:population_exposure]]
+_colnames = [:county_name;parameternames]
 dataS1 = DataFrame()
+parameter_post_means = DataFrame()
 for (j,colname) in enumerate(colnames)
     dataS1[!,string(colname)] = data[:,j]
 end
 
+for (j,colname) in enumerate(_colnames)
+    parameter_post_means[!,string(colname)] = _data[:,j]
+end
+
 CSV.write("opendatacsvs/dataS1.csv",dataS1)
+CSV.write("forecasts/parameter_posterior_means.csv",parameter_post_means)
 
 ## Data S2, S3 and S4
 

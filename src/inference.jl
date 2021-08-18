@@ -8,10 +8,10 @@ Infer the unknown transmission and observation parameters for the `k`th county i
     Serowaning rate can be added, as well as additional chains for cross-comparison and validation.
 
 """
-function inferparameters!(model,samples,trans,stepsize::Float64,D::Diagonal,q₀;serowaningrate = 1/365,num_chains = 1)
+function inferparameters!(model,samples,trans,stepsize::Float64,D::Diagonal,q₀;serowaningrate = 1/365,num_chains = 1,σ = 0.16,ω = 1/180)
         println("Starting MCMC parameter inference for $(model.areaname)")
         n = length(q₀)
-        l_area(x) = model.log_likelihood(x,model,serowaningrate) + model.log_priors(x)
+        l_area(x) = model.log_likelihood(x,model,serowaningrate;σ = σ,ω = ω) + model.log_priors(x)
         ℓ = TransformedLogDensity(trans, l_area)#transformed log-likelihood
         ∇ℓ = LogDensityProblems.ADgradient(:ForwardDiff, ℓ)#transformed log-likelihood gradient wrt the parameters
 
@@ -60,13 +60,13 @@ Infer the unknown transmission and observation parameters for the `k`th county i
 
     serowaning rate can be added, as well as additional chains for cross-comparison and validation.
 """
-function inferparameters!(model,samples,trans,stepsize::Float64,D::Diagonal;serowaningrate = 1/365,num_chains = 1)
+function inferparameters!(model,samples,trans,stepsize::Float64,D::Diagonal;serowaningrate = 1/365,num_chains = 1,σ = 0.16,ω = 1/180)
         println("Searching for a good initial condition for $(model.areaname)")
-        l_area(x) = model.log_likelihood(x,model,serowaningrate) + model.log_priors(x)
+        l_area(x) = model.log_likelihood(x,model,serowaningrate;σ = σ,ω = ω) + model.log_priors(x)
         f(x) = -transform_logdensity(trans, l_area,x)
         searchrange = fill((-3.,3.),TransformVariables.dimension(trans))
         res = bboptimize(f; SearchRange = searchrange,PopulationSize=1000,MaxSteps=30000,TraceMode = :silent)
         q₀ = best_candidate(res)
-        inferparameters!(model,samples,trans,stepsize,D,q₀;serowaningrate=serowaningrate,num_chains=num_chains)
+        inferparameters!(model,samples,trans,stepsize,D,q₀;serowaningrate=serowaningrate,num_chains=num_chains,σ = σ,ω = ω)
         return nothing
 end

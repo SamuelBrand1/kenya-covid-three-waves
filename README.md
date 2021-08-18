@@ -25,7 +25,7 @@ Please find the supplementary information containing further details on the data
 
 ## Getting started
 
-The source code for the module `KenyaCoVSD` is located in `\src`. `KenyaCoVSD` is not part of the Julia package ecosystem general directory, therefore, to use this module:
+The source code for the module `KenyaCoVSD` is located in `/src`. `KenyaCoVSD` is not part of the Julia package ecosystem general directory, therefore, to use this module:
 
 1. Clone this project using e.g. git clone.
 2. Activate the Julia REPL.
@@ -37,3 +37,15 @@ The source code for the module `KenyaCoVSD` is located in `\src`. `KenyaCoVSD` i
 (KenyaCoVSD) pkg> instantiate
 ```
 This will download and precompile the dependencies for `KenyaCoVSD`.
+
+## Model selection and sensitivity analysis
+
+Code and saved fits for alternative model structures and sensitivity analysis are in `sensitivity_analysis`. Considered alternative model structures are one-group and three-group models. Sensitivity analysis includes changing assumptions about rate of loss of immunity to reinfection with SARS-CoV-2, the relative susceptibility of individuals after a first episode, compared to naive individuals, and, the relative transmissibility of individuals in subsequent episodes of infection. The script `sensitivity_analysis/model_selection.jl` runs and presents model selection. The scripts:
+
+* `sensitivity_analysis/waning_immunity_sensitivity.jl` runs MCMC inference under a range of waning immunity assumptions.
+* `sensitivity_analysis/infectiousness_sensitivity.jl` runs MCMC inference under a range of subsequent episode infectiousness assumptions (these require an alternative formulation of the transmission model).
+* `sensitivity_analysis/sensitivity_analysis.jl` combines saved results from the two scripts above and prints MCMC posteriors for all parameters under each assumption as plots to `plots/sensitivity_analysis_plots`.
+
+## County specific plots
+
+We fitted a transmission to each of the 47 Kenyan counties. In the main paper analysis was presented in terms of aggregated pan-Kenyan totals. Please find county-specific plots of infections, daily deaths, daily PCR positive, overall population exposure and SES group specific R(t) in `/plots/county_plots`.
