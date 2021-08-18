@@ -92,7 +92,10 @@ end
 ## Plot the one-group model fit
 
 @load("sensitivity_analysis/nairobi_fits/nai_EM_fit.jld2")
+@load("forecasts/condensed_county_forecasts.jld2")
 include("../analysis_scripts/fitting_methods.jl");
+include("../analysis_scripts/plotting_methods.jl")
+
 
 ct_fitted = EM_steps[end][1]
 N = sum(N_kenya[:,"Nairobi"])
@@ -120,13 +123,32 @@ sol = solve(nai_one_group.prob, BS3();tspan = (0,(Date(2021,6,1) - Date(2020,2,2
 prop_PCR_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
 no_neg_PCR_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
 prop_sero_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
+infection_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
+
 sero_array = vcat(nai_one_group.baseline_sero_array[1:30],[(1-0)^k for k in 1:500])
 
-gather_uncertainty_one_group!(nai_one_group,prop_PCR_pos_mat,no_neg_PCR_pos_mat,prop_sero_pos_mat,sero_array)
+gather_uncertainty_one_group!(nai_one_group,prop_PCR_pos_mat,no_neg_PCR_pos_mat,prop_sero_pos_mat,infection_mat,sero_array)
 
+#Join the % PCR pos and number PCR pos predictions based on whether each day has neg PCR test counts or not
+nai_tests = vcat(nai_one_group.PCR_cases[1:(end-14),2],fill(-17,14+length(ι) - size(nai_one_group.PCR_cases,1)))
+pred_num_PCR_pos_mat = prop_PCR_pos_mat.*nai_tests.*(nai_tests .>= 0) .+ no_neg_PCR_pos_mat.*(nai_tests .< 0)
+#Get the posterior mean and credible intervals
 pred_prop_sero_pos = get_credible_intervals(prop_sero_pos_mat)
-plot(pred_prop_sero_pos.pred./nai_one_group.N,lab = "")
+pred_num_PCR_pos = get_credible_intervals(pred_num_PCR_pos_mat)
+#Compare to two-group fits
+nai_fit = condensed_county_forecasts[[fit.name == "Nairobi" for fit in condensed_county_forecasts]][1]
+sero_plt_compare = plot_pop_exposure(nai_fit,serological_data,serology_data,N_kenya);
+PCR_plt_compare = plot_PCR(nai_fit,linelist_data_with_pos_neg,linelist_data);
 
+plot!(PCR_plt_compare, 4:(length(pred_num_PCR_pos.pred)-3),
+                        weekly_mv_av(pred_num_PCR_pos.pred),
+                        color = :green,lw = 3,
+                        ribbon = (weekly_mv_av(pred_num_PCR_pos.lb),weekly_mv_av(pred_num_PCR_pos.ub)),
+                        lab = "One group model: fit and forecast")
+
+plot!(sero_plt_compare,pred_prop_sero_pos.pred./nai_one_group.N,
+        lab = "One group model fit: seroposivity",lw = 3,
+        ribbon = (pred_prop_sero_pos.lb./nai_one_group.N,pred_prop_sero_pos.ub./nai_one_group.N))
 
 
 

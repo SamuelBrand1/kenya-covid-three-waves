@@ -259,7 +259,7 @@ nai_one_group.log_likelihood = ll_onegroup_newvariant_infboost
 nai_one_group.log_priors = priors_onegroup_newvariant
 
 
-function gather_uncertainty_one_group!(nai_one_group,prop_PCR_pos_mat,no_neg_PCR_pos_mat,prop_sero_pos_mat,sero_array)
+function gather_uncertainty_one_group!(nai_one_group,prop_PCR_pos_mat,no_neg_PCR_pos_mat,prop_sero_pos_mat,infection_mat,sero_array)
     for j = 1:size(nai_one_group.MCMC_results.chain,1)
         R₀ = nai_one_group.MCMC_results.chain[:R₀][j]
         extra_transmissibility = nai_one_group.MCMC_results.chain[:extra_transmissibility][j]
@@ -294,6 +294,7 @@ function gather_uncertainty_one_group!(nai_one_group,prop_PCR_pos_mat,no_neg_PCR
         PCR_prop = [(χ*PCR[t]/((χ-1)*PCR[t] + N)) + 0.001 for t = 1:janendpoint]
         PCR_prop = vcat(PCR_prop,[(χ_boost*χ*PCR[t]/((χ_boost*χ-1)*PCR[t] + N))  + 0.001 for t = (janendpoint+1):length(PCR)])
 
+        infection_mat[:,j] .= ι_sero
         prop_PCR_pos_mat[:,j] .= PCR_prop
         no_neg_PCR_pos_mat[:,j] .= PCR_pred
         prop_sero_pos_mat[:,j] .=sero
