@@ -45,3 +45,7 @@ Code and saved fits for alternative model structures and sensitivity analysis ar
 * `sensitivity_analysis/waning_immunity_sensitivity.jl` runs MCMC inference under a range of waning immunity assumptions.
 * `sensitivity_analysis/infectiousness_sensitivity.jl` runs MCMC inference under a range of subsequent episode infectiousness assumptions (these require an alternative formulation of the transmission model).
 * `sensitivity_analysis/sensitivity_analysis.jl` combines saved results from the two scripts above and prints MCMC posteriors for all parameters under each assumption as plots to `plots/sensitivity_analysis_plots`.
+
+## County specific plots
+
+We fitted a transmission to each of the 47 Kenyan counties. In the main paper analysis was presented in terms of aggregated pan-Kenyan totals. Please find county-specific plots of infections, daily deaths, daily PCR positive, overall population exposure and SES group specific R(t) in `/plots/county_plots`.
