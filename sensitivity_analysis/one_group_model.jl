@@ -257,3 +257,46 @@ nai_one_group = deepcopy(basic_nai_model)
 nai_one_group.prob = prob_one_group
 nai_one_group.log_likelihood = ll_onegroup_newvariant_infboost
 nai_one_group.log_priors = priors_onegroup_newvariant
+
+
+function gather_uncertainty_one_group!(nai_one_group,prop_PCR_pos_mat,no_neg_PCR_pos_mat,prop_sero_pos_mat,sero_array)
+    for j = 1:size(nai_one_group.MCMC_results.chain,1)
+        R₀ = nai_one_group.MCMC_results.chain[:R₀][j]
+        extra_transmissibility = nai_one_group.MCMC_results.chain[:extra_transmissibility][j]
+        influx_exposed_new_variant = nai_one_group.MCMC_results.chain[:influx_exposed_new_variant][j]
+        p_test = nai_one_group.MCMC_results.chain[:p_test][j]
+        χ = nai_one_group.MCMC_results.chain[:χ][j]
+        E₀ = nai_one_group.MCMC_results.chain[:E₀][j]
+        p_test_boost = nai_one_group.MCMC_results.chain[:p_test_boost][j]
+        χ_boost = nai_one_group.MCMC_results.chain[:χ_boost][j]
+
+        p = [[R₀,nai_one_group.α,nai_one_group.γ,0.16,N,1/180];ct_fitted]
+        u0 = [N-E₀,E₀,0.0,0.0,0.0,0.0,0.0]
+
+        function new_variant_effect!(integrator)
+                integrator.p[1] *= extra_transmissibility
+                integrator.u[2] += influx_exposed_new_variant
+        end
+
+        janendpoint = (Date(2021,1,30) - Date(2020,2,20)).value
+        aprilendpoint = (Date(2021,4,30) - Date(2020,2,20)).value
+        variant_cb = PresetTimeCallback([janendpoint],new_variant_effect!)
+        
+        sol = solve(nai_one_group.prob, BS3();tspan = (0,(Date(2021,6,1) - Date(2020,2,20)).value),
+                        callback = variant_cb, u0=u0, p=p, saveat = 1)
+        ι = diff(sol[:C])
+        ι_sero = diff(sol[:C_sero])
+        PCR = KenyaCoVSD.simple_conv(ι,nai_one_group.PCR_array)
+        sero = nai_one_group.sero_sensitivity.*KenyaCoVSD.simple_conv(ι_sero,sero_array)
+
+        PCR_pred = [nai_one_group.relative_testing_rate[t]*p_test*PCR[t]*1e-4 + 0.001 for t = 1:janendpoint]
+        PCR_pred = vcat(PCR_pred,[p_test_boost*nai_one_group.relative_testing_rate[t]*p_test*PCR[t]*1e-4 + 0.001 for t = (janendpoint+1):length(PCR) ])
+        PCR_prop = [(χ*PCR[t]/((χ-1)*PCR[t] + N)) + 0.001 for t = 1:janendpoint]
+        PCR_prop = vcat(PCR_prop,[(χ_boost*χ*PCR[t]/((χ_boost*χ-1)*PCR[t] + N))  + 0.001 for t = (janendpoint+1):length(PCR)])
+
+        prop_PCR_pos_mat[:,j] .= PCR_prop
+        no_neg_PCR_pos_mat[:,j] .= PCR_pred
+        prop_sero_pos_mat[:,j] .=sero
+    end
+    return nothing
+end
