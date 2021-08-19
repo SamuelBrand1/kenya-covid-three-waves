@@ -70,11 +70,12 @@ plot!(PCR_plt,(1+3):(length(kenya_pos_mv_av)+3),kenya_pos_mv_av,
 # plot!(PCR_plt,(n_1+1):(size(linelist_data.cases,1)-3),weekly_mv_av(sum(linelist_data.cases,dims = 2)[:])[(n_1+1):end],color = :red,lw = 3,lab = "Daily cases: Kenyan MoH (7 day mv-av)")
 smooth_cases_lookahead = weekly_mv_av(sum(linelist_data.cases[(n_1-2):end,:],dims = 2)[:])
 plot!(PCR_plt,(length(kenya_pos_mv_av)+4):(length(kenya_pos_mv_av)+3+length(smooth_cases_lookahead)),smooth_cases_lookahead,
-        color = :red,lw = 3,
+        color = :black,lw = 3,ls = :dash,
         lab = "Daily cases: 7 day mv-av (not used in fitting)")
 
 plot!(PCR_plt,4:(n-3),kenya_pcr_forecast_mv_av,ribbon = 9*sqrt.(kenya_pcr_forecast_mv_av_var),
-        color = :green, lw = 5, ls = :dot,lab = "Model fit and forecast (7 day mv-av)")
+        color = :red, lw = 3,lab = "Model fit and forecast (7 day mv-av)",
+        fillalpha = 0.4)
 
 # savefig(PCR_plt,"plots/kenya_cases.png")
 
@@ -141,8 +142,8 @@ plot!(deaths_plt,4:(n-3),cumsum(kenya_deaths_forecast_mv_av),
 
 
 ## Kenya Serology plot
-plotlyjs()
-# gr()
+# plotlyjs()
+gr()
 xticktimes = [((Date(2020,2,1) + Month(k))- Date(2020,2,24)).value for k = 1:18 ]
 xticklabs = [monthname(k)[1:3]*"/20" for k = 3:12]
 xticklabs = vcat(xticklabs,[monthname(k)[1:3]*"/21" for k = 1:8])
@@ -228,14 +229,14 @@ scatter!(plt_sero,xs_mondays[seroidxs.*rnd3_idxs],kenya_weekly_sero_pos_rnd3[ser
         lab = "Weekly KNBTS: round 3 (not used in fitting)")
 plot!(plt_sero,kenya_serology_forecast_nw,lw = 2,color = :green,
         ribbon = 3*sqrt.(var_kenya_serology_forecast),
-        lab = "Model fit: seroposivity (adjusted, no seroreversion)" )
+        lab = "Model fit: seropositivity (test weighted, no seroreversion)" )
 plot!(plt_sero,test_weighted_kenya_serology_forecast,lw = 2,ls = :dash,color = :green,
-        lab = "Model fit: seroposivity (adjusted, with seroreversion)" )
+        lab = "Model fit: seropositivity (test weighted, with seroreversion)" )
 
 
 plot!(plt_sero,kenya_infections_forecast./sum(N_kenya),
         ribbon = 9*sqrt.(var_kenya_infections_forecast)./sum(N_kenya),
-        lab = "Model fit: Overall Kenyan population exposure (unadjusted)",
+        lab = "Model fit: Overall Kenyan population exposure",
         color = :red)
 
 # savefig(plt_sero,"plots/kenya_sero.png")

@@ -99,7 +99,7 @@ include("../analysis_scripts/plotting_methods.jl")
 
 ct_fitted = EM_steps[end][1]
 N = sum(N_kenya[:,"Nairobi"])
-plot(ct_fitted)
+ct_plt = plot_ct(ct_fitted)
 
 
 ##Calculate predictions
