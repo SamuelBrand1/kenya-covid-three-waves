@@ -34,6 +34,31 @@ function plot_Rt_both_SES_groups(model::KenyaCoVSD.CoVAreaModel,forecastdate::Da
         return plt
 end
 
+function plot_ct(ct_fitted)
+        june1day = (Date(2021,6,1) - Date(2020,2,20)).value
+        ct_for_plot = copy(ct_fitted)
+        if june1day > length(ct_fitted)
+                ct_for_plot = vcat(ct_fitted,fill(ct_fitted[end], june1day - length(ct_fitted)))
+        end
+
+        xticktimes = [((Date(2020,2,1) + Month(k))- Date(2020,2,24)).value for k = 1:18 ]
+        xticklabs = [monthname(k)[1:3]*"/20" for k = 3:12]
+        xticklabs = vcat(xticklabs,[monthname(k)[1:3]*"/21" for k = 1:8])
+
+        ct_plt = plot(ct_for_plot,
+                color = :black,lw = 3,
+                lab = "",
+                xticks = (xticktimes,xticklabs),
+                legend = :topright,
+                title = "Nairobi one-group fitted contact rates",
+                xlims = (-5,june1day),
+                ylabel = "Contact rate (rel. to pre-pandemic baseline)",
+                size = (1100,500),dpi = 250,
+                legendfont = 13,titlefont = 20,tickfontsize=10,guidefont = 12,
+                left_margin = 10mm,right_margin = 7.5mm)
+
+                return ct_plt
+end
 function plot_PCR(fit,linelist_data_with_pos_neg,linelist_data)
         june1day = (Date(2021,6,1) - Date(2020,2,24)).value
 

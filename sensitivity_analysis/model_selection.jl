@@ -100,42 +100,19 @@ include("../analysis_scripts/plotting_methods.jl")
 ct_fitted = EM_steps[end][1]
 N = sum(N_kenya[:,"Nairobi"])
 plot(ct_fitted)
+
+
 ##Calculate predictions
 
-#Placeholder solve run to get length of matrix
-p = [[2.5,nai_one_group.α,nai_one_group.γ,0.16,N,1/180];ct_fitted]
-u0 = [N-100,100,0.0,0.0,0.0,0.0,0.0]
-function new_variant_effect!(integrator)
-        integrator.p[1] *= 1.5
-        integrator.u[2] += 0.0
-end
-
-janendpoint = (Date(2021,1,30) - Date(2020,2,20)).value
-aprilendpoint = (Date(2021,4,30) - Date(2020,2,20)).value
-variant_cb = PresetTimeCallback([janendpoint],new_variant_effect!)
-
-
-sol = solve(nai_one_group.prob, BS3();tspan = (0,(Date(2021,6,1) - Date(2020,2,20)).value),
-                       callback = variant_cb, u0=u0, p=p, saveat = 1)
-ι = diff(sol[:C])
-
-## Gather the uncertainty over the PCR and seropos predictions
-prop_PCR_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
-no_neg_PCR_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
-prop_sero_pos_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
-infection_mat = zeros(length(ι),size(nai_one_group.MCMC_results.chain,1))
-
-sero_array = vcat(nai_one_group.baseline_sero_array[1:30],[(1-0)^k for k in 1:500])
-
-gather_uncertainty_one_group!(nai_one_group,prop_PCR_pos_mat,no_neg_PCR_pos_mat,prop_sero_pos_mat,infection_mat,sero_array)
+fit_mats = gather_uncertainty_one_group(nai_one_group,ct_fitted)
 
 #Join the % PCR pos and number PCR pos predictions based on whether each day has neg PCR test counts or not
-nai_tests = vcat(nai_one_group.PCR_cases[1:(end-14),2],fill(-17,14+length(ι) - size(nai_one_group.PCR_cases,1)))
-pred_num_PCR_pos_mat = prop_PCR_pos_mat.*nai_tests.*(nai_tests .>= 0) .+ no_neg_PCR_pos_mat.*(nai_tests .< 0)
+nai_tests = vcat(nai_one_group.PCR_cases[1:(end-14),2],fill(-17,14+size(fit_mats.prop_PCR_pos_mat,1) - size(nai_one_group.PCR_cases,1)))
+pred_num_PCR_pos_mat = fit_mats.prop_PCR_pos_mat.*nai_tests.*(nai_tests .>= 0) .+ fit_mats.no_neg_PCR_pos_mat.*(nai_tests .< 0)
 #Get the posterior mean and credible intervals
-pred_prop_sero_pos = get_credible_intervals(prop_sero_pos_mat)
+pred_prop_sero_pos = get_credible_intervals(fit_mats.prop_sero_pos_mat)
 pred_num_PCR_pos = get_credible_intervals(pred_num_PCR_pos_mat)
-pred_incidence = get_credible_intervals(infection_mat)
+pred_incidence = get_credible_intervals(fit_mats.infection_mat)
 #Compare to two-group fits
 nai_fit = condensed_county_forecasts[[fit.name == "Nairobi" for fit in condensed_county_forecasts]][1]
 sero_plt_compare = plot_pop_exposure(nai_fit,serological_data,serology_data,N_kenya);
@@ -158,9 +135,8 @@ plot!(sero_plt_compare,cumsum(pred_incidence.pred,dims = 1)./nai_one_group.N,
         ribbon = (cumsum(pred_incidence.lb,dims = 1)./nai_one_group.N,cumsum(pred_incidence.ub,dims = 1)./nai_one_group.N )
         )
 
-savefig()
-
-
+savefig(sero_plt_compare,"plots/sensitivity_analysis_plots/comparison_onegrp_vs_twogrp_pop_exposure.png")
+savefig(PCR_plt_compare,"plots/sensitivity_analysis_plots/comparison_onegrp_vs_twogrp_PCR_pos.png")
 
 ## Fill table for model 2
 @load("sensitivity_analysis/nairobi_fits/nai_EM_fit.jld2") #<---- Saved EM algorithm fits
