@@ -135,6 +135,7 @@ pred_num_PCR_pos_mat = prop_PCR_pos_mat.*nai_tests.*(nai_tests .>= 0) .+ no_neg_
 #Get the posterior mean and credible intervals
 pred_prop_sero_pos = get_credible_intervals(prop_sero_pos_mat)
 pred_num_PCR_pos = get_credible_intervals(pred_num_PCR_pos_mat)
+pred_incidence = get_credible_intervals(infection_mat)
 #Compare to two-group fits
 nai_fit = condensed_county_forecasts[[fit.name == "Nairobi" for fit in condensed_county_forecasts]][1]
 sero_plt_compare = plot_pop_exposure(nai_fit,serological_data,serology_data,N_kenya);
@@ -142,15 +143,22 @@ PCR_plt_compare = plot_PCR(nai_fit,linelist_data_with_pos_neg,linelist_data);
 
 plot!(PCR_plt_compare, 4:(length(pred_num_PCR_pos.pred)-3),
                         weekly_mv_av(pred_num_PCR_pos.pred),
+                        title = "Nairobi PCR test, model comparison",
                         color = :green,lw = 3,
                         ribbon = (weekly_mv_av(pred_num_PCR_pos.lb),weekly_mv_av(pred_num_PCR_pos.ub)),
                         lab = "One group model: fit and forecast")
 
 plot!(sero_plt_compare,pred_prop_sero_pos.pred./nai_one_group.N,
-        lab = "One group model fit: seroposivity",lw = 3,
+        title = "Nairobi population exposure, model comparison",
+        lab = "One group model fit: seroposivity",lw = 3,color = :green,ls = :dash,
         ribbon = (pred_prop_sero_pos.lb./nai_one_group.N,pred_prop_sero_pos.ub./nai_one_group.N))
 
+plot!(sero_plt_compare,cumsum(pred_incidence.pred,dims = 1)./nai_one_group.N,
+        lab = "One group model fit: Overall population exposure",lw = 3,color = :red,ls = :dash,
+        ribbon = (cumsum(pred_incidence.lb,dims = 1)./nai_one_group.N,cumsum(pred_incidence.ub,dims = 1)./nai_one_group.N )
+        )
 
+savefig()
 
 
 
