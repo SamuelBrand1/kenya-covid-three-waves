@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/377128734.svg)](https://zenodo.org/badge/latestdoi/377128734)
+
 # kenya-covid-three-waves
  Simulation and inference code for SARS-CoV-2 transmission within and between socio-economic groups in Kenya over the first three waves of COVID-19 in Kenya.
 
