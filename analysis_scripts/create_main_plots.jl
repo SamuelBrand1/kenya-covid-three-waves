@@ -239,7 +239,7 @@ plot!(plt_sero,kenya_infections_forecast./sum(N_kenya),
         lab = "Model fit: Overall Kenyan population exposure",
         color = :red)
 
-# savefig(plt_sero,"plots/kenya_sero.png")
+# savefig(plt_sero,"plots/kenya_sero.pdf")
 
 ## Kenyan incidence
 
@@ -282,7 +282,7 @@ plot!(plt_inc,kenya_group2_incidence./1e5,
         legend = :topleft,
         ribbon = 3*sqrt.(var_kenya_group2_incidence)./1e5)
 
-# savefig(plt_inc,"plots/kenya_incidence_SES.png")
+# savefig(plt_inc,"plots/kenya_incidence_SES.pdf")
 
 ## Rt plots
 @load("modelfits/Nairobi_model.jld2")
@@ -300,7 +300,7 @@ Rt_plt_mom = plot_Rt_both_SES_groups(mombasa_model,Date(2021,8,1))
 Rt_plt_kiambu= plot_Rt_both_SES_groups(kiambu_model,Date(2021,8,1))
 Rt_plt_mandera= plot_Rt_both_SES_groups(mandera_model,Date(2021,8,1))
 
-savefig(Rt_plt_nai,"plots/Rt_nai.png")
-savefig(Rt_plt_mom,"plots/Rt_mom.png")
-savefig(Rt_plt_kiambu,"plots/Rt_kiambu.png")
-savefig(Rt_plt_mandera,"plots/Rt_mandera.png")
+savefig(Rt_plt_nai,"plots/Rt_nai.pdf")
+savefig(Rt_plt_mom,"plots/Rt_mom.pdf")
+savefig(Rt_plt_kiambu,"plots/Rt_kiambu.pdf")
+savefig(Rt_plt_mandera,"plots/Rt_mandera.pdf")
