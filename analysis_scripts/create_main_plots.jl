@@ -77,7 +77,7 @@ plot!(PCR_plt,4:(n-3),kenya_pcr_forecast_mv_av,ribbon = 9*sqrt.(kenya_pcr_foreca
         color = :red, lw = 3,lab = "Model fit and forecast (7 day mv-av)",
         fillalpha = 0.4)
 
-# savefig(PCR_plt,"plots/kenya_cases.png")
+# savefig(PCR_plt,"plots/kenya_cases.pdf")
 
 ## Kenyan deaths
 
@@ -138,7 +138,7 @@ plot!(deaths_plt,(1+3):(length(kenya_deaths_mv_av)+3),cumsum(kenya_deaths_mv_av)
 plot!(deaths_plt,4:(n-3),cumsum(kenya_deaths_forecast_mv_av),
         xlims = (-5,june1day),color = :green, lw = 5, ls = :dot,lab = "",subplot=2)
 
-# savefig(deaths_plt,"plots/kenya_deaths.png")
+# savefig(deaths_plt,"plots/kenya_deaths.pdf")
 
 
 ## Kenya Serology plot
@@ -258,6 +258,7 @@ for fit in condensed_county_forecasts
      var_kenya_group2_incidence .+= fit.pred.std_incidence₂.^2
 end
 
+#Remove the callback positions
 deleteat!(kenya_group1_incidence,kenya_group1_incidence.==0)
 deleteat!(var_kenya_group1_incidence,var_kenya_group1_incidence.==0)
 deleteat!(kenya_group2_incidence,kenya_group2_incidence.==0)
