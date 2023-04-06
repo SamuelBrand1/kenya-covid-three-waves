@@ -5,10 +5,9 @@
 
 This code repository contains the underlying model code for the paper *COVID-19 Transmission Dynamics Underlying Epidemic Waves in Kenya*.
 ## Prerequisites and recommended background knowledge:
-* Access and basic familiarity with the [Julia programming language](https://julialang.org/).
-* The underlying dynamical system representing the unobserved infection process is a modification to the basic SEIR model that is described in [this paper](https://journals.sagepub.com/doi/full/10.1177/0962280217747054), albeit we implement a continuous time rather than discrete version of the model.
+* Basic familiarity with the [Julia programming language](https://julialang.org/).
 * Solutions of the infection process are generated using the performant, and well documented, package [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl). Familiarisation with this package is desirable.
-* Hamiltonian MCMC (HMC) is implemented using the [dynamicHMC.jl](https://github.com/tpapp/DynamicHMC.jl) package. The log-likelihood function for parameters is directly defined in KenyaSerology, and log-likelihood gradients (necessary for HMC) are calculated using forward-mode automatic differentiation. The combination of ODE solutions and log-likelihood function gradients in code was inspired by [DiffEqBayes.jl](https://github.com/SciML/DiffEqBayes.jl). A good conceptual introduction to HMC can be found [here](https://arxiv.org/abs/1701.02434).
+* Hamiltonian MCMC (HMC) is implemented using the [dynamicHMC.jl](https://github.com/tpapp/DynamicHMC.jl) package. The log-likelihood function for parameters is directly defined in `KenyaCoVSD`, and log-likelihood gradients (necessary for HMC) are calculated using forward-mode automatic differentiation. The combination of ODE solutions and log-likelihood function gradients in code was inspired by [DiffEqBayes.jl](https://github.com/SciML/DiffEqBayes.jl). A good conceptual introduction to HMC can be found [here](https://arxiv.org/abs/1701.02434).
 * MCMC posterior draws for parameters are stored as a `Chains` struct from the `MCMCChains` [package](https://github.com/TuringLang/MCMCChains.jl). The MCMC draws for each county are available from the `JLD2` objects stored in `\modelfits`, e.g.
 ```julia
 using JLD2,MCMCChains
